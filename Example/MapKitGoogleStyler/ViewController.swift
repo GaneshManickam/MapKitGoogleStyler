@@ -16,17 +16,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        guard let jsonURL = Bundle.main.url(forResource: "MapStyle", withExtension: "json") else {
-            print("Invalid json url")
-            return
-        }
-        
-        do {
-            try mapView.customize(withJSONFileURL: jsonURL)
-        } catch let error {
-            print("Error! \(error)")
-        }
+        self.configureMapView()
     }
 
     override func didReceiveMemoryWarning() {
@@ -34,5 +24,31 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
 
+    func configureMapView() {
+        mapView.delegate = self
+        // We first need to have the path of the overlay configuration JSON
+        guard let overlayFileURLString = Bundle.main.path(forResource: "MapStyle", ofType: "json") else {
+            return
+        }
+        let overlayFileURL = URL(fileURLWithPath: overlayFileURLString)
+
+        // After that, you can create the tile overlay using MapKitGoogleStyler
+        guard let tileOverlay = try? MapKitGoogleStyler.buildOverlay(with: overlayFileURL) else {
+            return
+        }
+
+        // And finally add it to your MKMapView
+        mapView.addOverlay(tileOverlay)
+
+    }
 }
 
+extension ViewController: MKMapViewDelegate {
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+         if let tileOverlay = overlay as? MKTileOverlay {
+               return MKTileOverlayRenderer(tileOverlay: tileOverlay)
+           } else {
+               return MKOverlayRenderer(overlay: overlay)
+           }
+       }
+}
